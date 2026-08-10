@@ -7,10 +7,8 @@ Fluxo:
 3. Normaliza o JSON em DataFrame e seleciona só as colunas de interesse.
 4. Trata/transforma essas colunas (limpa HTML, extrai requisitos de sistema,
    converte bool, etc) -> camada tratada.
+5. Exporta pra Excel com largura de coluna ajustada ao conteúdo.
 """
-import openpyxl
-from openpyxl.utils import get_column_letter
-from openpyxl import load_workbook
 import json
 import re
 from pathlib import Path
@@ -18,16 +16,21 @@ from pathlib import Path
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 # ---------------------------------------------------------------------------
 # Configurações
 # ---------------------------------------------------------------------------
 
-APP_ID = 3240220
+APP_ID = 1145350
 STEAM_API_URL = f"https://store.steampowered.com/api/appdetails?appids={APP_ID}&cc=br&l=portuguese"
 
 PASTA_DADOS = Path("dados")
 CAMINHO_BRUTO = PASTA_DADOS / f"{APP_ID}_bruto.json"
+
+PASTA_XLSX = Path("xlsx_tratado")
+CAMINHO_XLSX = PASTA_XLSX / "dados_jogo.xlsx"
 
 # Colunas que a gente efetivamente quer manter da resposta normalizada.
 # Os requisitos de PC/Mac/Linux entram aqui como "matéria-prima": eles são
@@ -162,7 +165,6 @@ def extrair_requisitos_steam(infojogo: pd.DataFrame) -> pd.DataFrame:
         disco_extraido = infojogo[col_origem].str.extract(padroes["disco_gb"], flags=re.IGNORECASE, expand=False)
         infojogo[f"{prefixo}_disco_gb"] = pd.to_numeric(disco_extraido, errors="coerce")
 
-            
     return infojogo
 
 
@@ -195,7 +197,39 @@ def orquestradora(infojogo: pd.DataFrame) -> pd.DataFrame:
     ]
     infojogo = infojogo.drop(columns=colunas_antigas)
 
+    # 6. Preenche NaN de colunas de requisito (plataforma não suportada)
+    colunas_requisitos = [c for c in infojogo.columns if c.startswith(("pc_", "mac_", "linux_"))]
+    infojogo[colunas_requisitos] = infojogo[colunas_requisitos].fillna("Não suportado")
+
     return infojogo
+
+
+# ---------------------------------------------------------------------------
+# Exportação
+# ---------------------------------------------------------------------------
+
+
+def salvar_com_largura_ajustada(tratado: pd.DataFrame, caminho_arquivo: Path, sheet_name: str) -> None:
+    """
+    Salva o DataFrame em Excel e ajusta a largura de cada coluna
+    de acordo com o maior conteúdo (cabeçalho ou valor).
+    """
+    caminho_arquivo.parent.mkdir(parents=True, exist_ok=True)
+
+    tratado.to_excel(caminho_arquivo, index=False, sheet_name=sheet_name, engine="openpyxl")
+
+    wb = load_workbook(caminho_arquivo)
+    ws = wb[sheet_name]
+
+    for i, coluna in enumerate(tratado.columns, start=1):
+        tamanho_maximo = max(
+            len(str(coluna)),
+            tratado[coluna].map(lambda x: len(str(x))).max(),
+        )
+        ws.column_dimensions[get_column_letter(i)].width = tamanho_maximo + 2
+
+    wb.save(caminho_arquivo)
+    print(f"✅ Dado tratado salvo com sucesso em: {caminho_arquivo}")
 
 
 # ---------------------------------------------------------------------------
@@ -211,28 +245,12 @@ def main() -> None:
 
     tratado = orquestradora(infojogo)
 
-    colunas_requisitos = [c for c in tratado.columns if c.startswith(("pc_", "mac_", "linux_"))]
-    tratado[colunas_requisitos] = tratado[colunas_requisitos].fillna("Não suportado")
-
-
     with pd.option_context("display.max_colwidth", None, "display.max_columns", None):
         for coluna, valor in tratado.iloc[0].items():
             print(f"[{coluna}]:\n{valor}\n{'-' * 40}")
-    try:
-        tratado.to_excel("xlsx_tratado/dados_jogo.xlsx", index=False, sheet_name=f"jogo ID{APP_ID}", engine="openpyxl")
-        print("foi")
-    except Exception as e:
-        print(e)
 
-    wb = load_workbook("xlsx_tratado/dados_jogo.xlsx")
-    ws = wb[f"jogo ID{APP_ID}"]
+    salvar_com_largura_ajustada(tratado, CAMINHO_XLSX, sheet_name=f"jogo ID{APP_ID}")
 
-    for i, coluna in enumerate(tratado.columns, start=1):
-        tamanho_maximo = max(
-            len(str(coluna)),
-            tratado[coluna].map(lambda x: len(str(x))).max())
-        ws.column_dimensions[get_column_letter(i)].width = tamanho_maximo + 2
 
-    wb.save("xlsx_tratado/dados_jogo.xlsx")
 if __name__ == "__main__":
     main()
