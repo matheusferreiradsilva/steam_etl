@@ -16,8 +16,12 @@ Recebe o ID de um jogo, busca os dados na API pública da Steam e transforma o J
    - Conversão de colunas booleanas pra inteiro
    - Parsing da lista de gêneros (lista de dicionários) pra uma única string
    - Extração via regex de sistema operacional, processador, RAM e placa de vídeo, que vinham misturados num bloco de texto por plataforma (Windows, Mac e Linux)
-5. **Orquestração**: todas as funções de tratamento são centralizadas numa função orquestradora.
+5. **Orquestração**: todas as funções de tratamento foram centralizadas numa função orquestradora.
 6. **Saída**: os dados tratados são exportados pra um arquivo Excel, com ajuste automático da largura das colunas.
+
+## Arquitetura e Organização
+
+O código do projeto foi totalmente modularizado, deixando de ser um script procedural único e passando a contar com uma estrutura de arquivos separada por responsabilidades para facilitar a manutenção e a escalabilidade.
 
 ## Tecnologias
 
@@ -30,13 +34,12 @@ Recebe o ID de um jogo, busca os dados na API pública da Steam e transforma o J
 
 ## Status
 
-Projeto ainda simples e procedural. Próximo passo: modularizar o código em arquivos separados e trabalhar a arquitetura do projeto.
+Projeto modularizado com sucesso. Próximo passo: continuar a evolução da arquitetura e expansão do pipeline de dados.
 
 ## Como rodar
 
 ```bash
 pip install pandas requests beautifulsoup4 openpyxl
-python steam_etl.py
-```
+python src/main.py
 
-O ID do jogo é definido na variável `APP_ID` no início do script.
+O ID do jogo é definido na variável APP_ID no início do config.py.
