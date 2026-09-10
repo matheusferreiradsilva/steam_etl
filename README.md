@@ -1,45 +1,47 @@
+*Read this in other languages: [Português](README.pt-br.md)*
+
 # steam_etl
 
-Meu primeiro projeto de pipeline de dados, feito enquanto estudo engenharia de dados.
+My first data pipeline project, built while studying data engineering.
 
-## O que faz
+## What it does
 
-Recebe o ID de um jogo, busca os dados na API pública da Steam e transforma o JSON bruto retornado em uma planilha Excel estruturada e tratada.
+Takes a game ID, fetches data from the public Steam API, and transforms the returned raw JSON into a structured and cleaned Excel spreadsheet.
 
-## Fluxo
+## Flow
 
-1. **Extração**: requisição na API da Steam a partir do ID do jogo (usei Hades 2 pra testar).
-2. **Camada raw**: a resposta é salva em disco exatamente como veio, sem nenhum tratamento.
-3. **Exploração**: o JSON é normalizado em DataFrame com pandas, e as colunas de interesse são selecionadas.
-4. **Tratamento**: funções específicas resolvem cada problema encontrado nos dados:
-   - Limpeza de tags HTML nas descrições
-   - Conversão de colunas booleanas pra inteiro
-   - Parsing da lista de gêneros (lista de dicionários) pra uma única string
-   - Extração via regex de sistema operacional, processador, RAM e placa de vídeo, que vinham misturados num bloco de texto por plataforma (Windows, Mac e Linux)
-5. **Orquestração**: todas as funções de tratamento foram centralizadas numa função orquestradora.
-6. **Saída**: os dados tratados são exportados pra um arquivo Excel, com ajuste automático da largura das colunas.
+1. **Extraction**: Request to the Steam API using the game ID (I used Hades 2 for testing).
+2. **Raw layer**: The response is saved to disk exactly as received, without any processing.
+3. **Exploration**: The JSON is normalized into a DataFrame using pandas, and the columns of interest are selected.
+4. **Data Cleaning**: Specific functions solve each issue found in the data:
+   * Cleaning HTML tags from descriptions
+   * Converting boolean columns to integers
+   * Parsing the genre list (list of dictionaries) into a single string
+   * Regex extraction of OS, processor, RAM, and graphics card, which came mixed in a text block per platform (Windows, Mac, and Linux)
+5. **Orchestration**: All cleaning functions were centralized into a single orchestrator function.
+6. **Output**: The cleaned data is exported to an Excel file, with automatic column width adjustment.
 
-## Arquitetura e Organização
+## Architecture and Organization
 
-O código do projeto foi totalmente modularizado, deixando de ser um script procedural único e passando a contar com uma estrutura de arquivos separada por responsabilidades para facilitar a manutenção e a escalabilidade.
+The project code was fully modularized, moving from a single procedural script to a file structure separated by responsibilities to facilitate maintenance and scalability.
 
-## Tecnologias
+## Technologies
 
-- Python
-- pandas
-- requests
-- BeautifulSoup (limpeza de HTML)
-- openpyxl (exportação e formatação do Excel)
-- regex
+* Python
+* pandas
+* requests
+* BeautifulSoup (HTML cleaning)
+* openpyxl (Excel export and formatting)
+* regex
 
 ## Status
 
-Projeto modularizado com sucesso. Próximo passo: continuar a evolução da arquitetura e expansão do pipeline de dados.
+Project successfully modularized. Next step: continue evolving the architecture and expanding the data pipeline.
 
-## Como rodar
+## How to run
 
 ```bash
 pip install pandas requests beautifulsoup4 openpyxl
 python src/main.py
 
-O ID do jogo é definido na variável APP_ID no início do config.py.
+The game ID is defined in the APP_ID variable at the top of config.py
