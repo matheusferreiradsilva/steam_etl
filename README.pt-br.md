@@ -1,47 +1,137 @@
-*Leia em outros idiomas: [English](README.md)*
-
 # steam_etl
 
-Meu primeiro projeto de pipeline de dados, feito enquanto estudo engenharia de dados.
+Pipeline ETL em Python para coletar detalhes de jogos da API pública da
+Steam, tratar os dados e exportá-los para uma planilha Excel.
 
-## O que faz
+> Leia em outros idiomas: [English](README.md)
 
-Recebe o ID de um jogo, busca os dados na API pública da Steam e transforma o JSON bruto retornado em uma planilha Excel estruturada e tratada.
+## Visão geral
 
-## Fluxo
+O projeto recebe um `APP_ID` de jogo, consulta o endpoint
+`appdetails` da Steam em português do Brasil e executa três etapas:
 
-1. **Extração**: requisição na API da Steam a partir do ID do jogo (usei Hades 2 pra testar).
-2. **Camada raw**: a resposta é salva em disco exatamente como veio, sem nenhum tratamento.
-3. **Exploração**: o JSON é normalizado em DataFrame com pandas, e as colunas de interesse são selecionadas.
-4. **Tratamento**: funções específicas resolvem cada problema encontrado nos dados:
-   - Limpeza de tags HTML nas descrições
-   - Conversão de colunas booleanas pra inteiro
-   - Parsing da lista de gêneros (lista de dicionários) pra uma única string
-   - Extração via regex de sistema operacional, processador, RAM e placa de vídeo, que vinham misturados num bloco de texto por plataforma (Windows, Mac e Linux)
-5. **Orquestração**: todas as funções de tratamento foram centralizadas numa função orquestradora.
-6. **Saída**: os dados tratados são exportados pra um arquivo Excel, com ajuste automático da largura das colunas.
+1. **Extração:** faz a requisição HTTP e salva a resposta original em JSON na
+   pasta `dados/`.
+2. **Transformação:** normaliza o JSON com pandas, seleciona as colunas de
+   interesse, remove HTML, converte valores booleanos, transforma gêneros em
+   texto e extrai requisitos de sistema por plataforma com expressões
+   regulares.
+3. **Carga:** grava os dados tratados em
+   `xlsx_tratado/dados_jogo.xlsx`, ajustando automaticamente a largura das
+   colunas.
 
-## Arquitetura e Organização
-
-O código do projeto foi totalmente modularizado, deixando de ser um script procedural único e passando a contar com uma estrutura de arquivos separada por responsabilidades para facilitar a manutenção e a escalabilidade.
+O valor configurado atualmente em `src/config/settings.py` é o app `1145350`.
+Para processar outro jogo, altere `APP_ID`; a URL da Steam e os caminhos de
+saída são derivados automaticamente dessa configuração.
 
 ## Tecnologias
 
-- Python
-- pandas
-- requests
-- BeautifulSoup (limpeza de HTML)
-- openpyxl (exportação e formatação do Excel)
-- regex
+- Python 3.10 ou superior
+- [pandas](https://pandas.pydata.org/)
+- [requests](https://requests.readthedocs.io/)
+- [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/)
+- [openpyxl](https://openpyxl.readthedocs.io/)
+- `re`, biblioteca padrão do Python, para extração dos requisitos
 
-## Status
+## Estrutura do projeto
 
-Projeto modularizado com sucesso. Próximo passo: continuar a evolução da arquitetura e expansão do pipeline de dados.
+```text
+.
+├── dados/                  # Respostas brutas da API em JSON
+├── src/
+│   ├── config/settings.py  # APP_ID, URL, caminhos e colunas selecionadas
+│   ├── extract/            # Consulta à API e persistência da camada raw
+│   ├── transform/          # Limpeza e normalização dos dados
+│   ├── load/               # Exportação e formatação do Excel
+│   └── main.py             # Orquestração do pipeline
+├── tests/                  # Espaço para testes automatizados
+├── xlsx_tratado/           # Planilha gerada pelo pipeline
+└── steam.py                # Implementação monolítica anterior do pipeline
+```
 
-## Como rodar
+## Pré-requisitos
+
+- Python 3.10 ou superior
+- Acesso à internet para consultar a API da Steam
+
+É recomendado criar um ambiente virtual:
 
 ```bash
-pip install pandas requests beautifulsoup4 openpyxl
-python src/main.py
+python -m venv .venv
+```
 
-O ID do jogo é definido na variável APP_ID no início do config.py.
+Ative o ambiente virtual:
+
+```bash
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# Linux/macOS
+source .venv/bin/activate
+```
+
+Instale as dependências:
+
+```bash
+python -m pip install pandas requests beautifulsoup4 openpyxl
+```
+
+## Como executar
+
+Na raiz do projeto, execute:
+
+```bash
+python src/main.py
+```
+
+Ao finalizar, o pipeline gera:
+
+- `dados/1145350_bruto.json`: resposta original recebida da Steam;
+- `xlsx_tratado/dados_jogo.xlsx`: dados tratados, em uma aba nomeada com o
+  ID do jogo.
+
+Os diretórios de saída são criados automaticamente quando necessário.
+
+## Dados tratados
+
+O pipeline mantém informações como nome, idade recomendada, gêneros, preços,
+plataformas, nota do Metacritic e data de lançamento. Também cria campos
+específicos para requisitos mínimos e recomendados de Windows, macOS e Linux,
+incluindo:
+
+- sistema operacional;
+- processador;
+- memória RAM em GB;
+- placa de vídeo;
+- espaço em disco em GB.
+
+Plataformas sem requisitos disponíveis são preenchidas com `Não suportado`.
+
+## Desenvolvimento
+
+Para executar os testes, instale o pytest e rode:
+
+```bash
+python -m pip install pytest
+python -m pytest
+```
+
+O arquivo `steam.py` permanece no repositório como referência da versão
+monolítica original. A execução recomendada é `src/main.py`, que usa a
+implementação modularizada.
+
+## Limitações e próximos passos
+
+- O pipeline processa um jogo por execução.
+- O `APP_ID` ainda é configurado diretamente no código.
+- Não há um arquivo de dependências fixadas (`requirements.txt` ou
+  equivalente).
+- A cobertura de testes automatizados pode ser expandida.
+
+Possíveis evoluções incluem receber o ID por argumento de linha de comando,
+adicionar tratamento de timeout e retries na requisição, fixar versões das
+dependências e ampliar a cobertura de testes.
+
+## Licença
+
+Nenhuma licença foi definida no repositório até o momento.

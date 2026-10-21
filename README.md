@@ -1,47 +1,58 @@
-*Read this in other languages: [Português](README.pt-br.md)*
-
 # steam_etl
 
-My first data pipeline project, built while studying data engineering.
+Python ETL pipeline that collects game details from the public Steam API,
+cleans and transforms the data, and exports it to an Excel spreadsheet.
 
-## What it does
+> Read this in other languages: [Português (Brasil)](README.pt-br.md)
 
-Takes a game ID, fetches data from the public Steam API, and transforms the returned raw JSON into a structured and cleaned Excel spreadsheet.
+## Overview
 
-## Flow
+The pipeline reads a game `APP_ID`, requests the Steam `appdetails` endpoint,
+saves the raw response as JSON, normalizes and cleans the selected fields with
+pandas, and writes the result to `xlsx_tratado/dados_jogo.xlsx`.
 
-1. **Extraction**: Request to the Steam API using the game ID (I used Hades 2 for testing).
-2. **Raw layer**: The response is saved to disk exactly as received, without any processing.
-3. **Exploration**: The JSON is normalized into a DataFrame using pandas, and the columns of interest are selected.
-4. **Data Cleaning**: Specific functions solve each issue found in the data:
-   * Cleaning HTML tags from descriptions
-   * Converting boolean columns to integers
-   * Parsing the genre list (list of dictionaries) into a single string
-   * Regex extraction of OS, processor, RAM, and graphics card, which came mixed in a text block per platform (Windows, Mac, and Linux)
-5. **Orchestration**: All cleaning functions were centralized into a single orchestrator function.
-6. **Output**: The cleaned data is exported to an Excel file, with automatic column width adjustment.
+The current default app ID is `1145350`, configured in
+`src/config/settings.py`. Change `APP_ID` there to process another game.
 
-## Architecture and Organization
+## Stack
 
-The project code was fully modularized, moving from a single procedural script to a file structure separated by responsibilities to facilitate maintenance and scalability.
+- Python 3.10+
+- pandas
+- requests
+- Beautiful Soup
+- openpyxl
 
-## Technologies
+## Project structure
 
-* Python
-* pandas
-* requests
-* BeautifulSoup (HTML cleaning)
-* openpyxl (Excel export and formatting)
-* regex
+```text
+dados/                  # Raw API responses
+src/config/             # Application settings
+src/extract/            # Steam API extraction
+src/transform/          # Data cleaning and normalization
+src/load/               # Excel export
+src/main.py             # ETL orchestration
+tests/                  # Automated tests
+xlsx_tratado/           # Generated Excel output
+steam.py                # Previous monolithic implementation
+```
 
-## Status
-
-Project successfully modularized. Next step: continue evolving the architecture and expanding the data pipeline.
-
-## How to run
+## Installation and usage
 
 ```bash
-pip install pandas requests beautifulsoup4 openpyxl
-python src/main.py
+python -m venv .venv
 
-The game ID is defined in the APP_ID variable at the top of config.py
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# Linux/macOS
+source .venv/bin/activate
+
+python -m pip install pandas requests beautifulsoup4 openpyxl
+python src/main.py
+```
+
+The raw JSON and formatted Excel file are created automatically in `dados/`
+and `xlsx_tratado/`.
+
+For the complete documentation, including the transformation details and
+development notes, see [README.pt-br.md](README.pt-br.md).
